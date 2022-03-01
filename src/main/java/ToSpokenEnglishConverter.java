@@ -1,8 +1,13 @@
-
 import java.util.regex.Pattern;
 
+/**
+ * This class is used as a wrapper for a static method of convertToSpokenTime used to convert time to english
+ * spoken language
+ * @author Wojciech Franczuk
+ */
 public class ToSpokenEnglishConverter {
 
+    //This array is used to store names of consecutive number names used in conversion of time
     private static final String[] numberNames = {
             "",
             "one",
@@ -26,6 +31,7 @@ public class ToSpokenEnglishConverter {
             "nineteen",
     };
 
+    //This array stores names of multiples of ten, used to avoid the need of storing every combination of digits as words.
     private static final String[] tensDigitsNames = {
             "",
             "ten",
@@ -33,9 +39,15 @@ public class ToSpokenEnglishConverter {
             "half",
     };
 
+    /**
+     * Returns english words representing the spoken time given as input.
+     *
+     * @param time 12 hour clock time in format of HH:MM that is to be converted to spoken english
+     * @return the String representing the spoken form of specified input
+     * @throws IllegalArgumentException when input is not in required format
+     */
     public static String convertToSpokenTime(String time) throws IllegalArgumentException {
-        StringBuilder timeInEnglish = new StringBuilder();
-        Integer hour, minute;
+        int hour, minute;
         validateInput(time);
         String[] hourAndMinutes = time.split(":");
         try {
@@ -44,53 +56,70 @@ public class ToSpokenEnglishConverter {
         } catch (NumberFormatException e) {
             throw new NumberFormatException("Incorrect input format: " + time + ", only accepted formats are HH:MM or H:MM");
         }
-        validateRangeOfInput(hour, minute);
+        validateRangeOfInput(hour);
 
-        if(minute.equals(0)){
-            handleSpecialCases(timeInEnglish, hour);
-        } else {
-            appendWithSpokenTime(timeInEnglish, hour, minute);
-        }
-
-        return timeInEnglish.toString().replace("  ", " ");
+        return createSpokenString(hour, minute);
     }
 
-    private static void appendWithSpokenTime(StringBuilder timeInEnglish, Integer hour, Integer minute) {
+    /**
+     * Appends the timeInEnglish parameter with complete spoken time.
+     * @param hour the hour to be converted to word form
+     * @param minute the minutes to be converted to word form
+     * @return the full english spoken time representing the input values
+     */
+    private static String createSpokenString(Integer hour, Integer minute) {
+        StringBuilder timeInEnglish = new StringBuilder();
+        if(minute.equals(0)) {
+            return convertZeroMinutesTime(hour);
+        }
         if(minute <= 30) {
-            minutesToSpokenEnglish(timeInEnglish, minute);
-            timeInEnglish.append(" ").append("past");
+            timeInEnglish.append(convertMinutesToSpokenEnglish(minute)).append(" ").append("past");
         } else {
             minute = 60 - minute;
             hour = hour + 1;
-            minutesToSpokenEnglish(timeInEnglish, minute);
-            timeInEnglish.append(" ").append("to");
+            timeInEnglish.append(convertMinutesToSpokenEnglish(minute)).append(" ").append("to");
         }
+
+        //Ugly solution to handling the special case of naming the "00" hour
+        //needed because it cannot be mapped in numberNames without breaking other uses of 0 as empty String.
         if(hour == 0) {
             hour = 12;
         }
-        timeInEnglish.append(" ").append(numberNames[hour]);
+        return timeInEnglish.append(" ").append(numberNames[hour]).toString().replace("  ", " ");
     }
 
-    private static void validateRangeOfInput(Integer hour, Integer minute) {
+    /**
+     * Used to validate the input for incorrect time formats such as 24 hour clock (eg. 16:45)
+     * @param hour the hour to be validated
+     * @throws IllegalArgumentException if the input is not valid
+     */
+    private static void validateRangeOfInput(Integer hour) throws IllegalArgumentException {
         if (hour < 0 || hour > 12) {
             throw new IllegalArgumentException("Incorrect hour, it needs to be between 0-12");
         }
-        if (minute < 0 || minute > 59) {
-            throw new IllegalArgumentException("Incorrect minutes, it needs to be between 0-59");
-        }
     }
 
-    private static void handleSpecialCases(StringBuilder timeInEnglish, Integer hour) {
+    /**
+     * Method needed to handle special cases of wording in english language when the minute count is equal to 0.
+     * Examples: noon (12:00) and midnight (00:00), as well as "o'clock".
+     * @param hour the hour to be converted to words
+     * @return the final string of converted special cases
+     */
+    private static String convertZeroMinutesTime(Integer hour) {
         if (hour.equals(12)){
-            timeInEnglish.append("noon");
+            return  "noon";
         } else if (hour.equals(0)){
-            timeInEnglish.append("midnight");
-        }
-        else {
-            timeInEnglish.append(numberNames[hour]).append(" o'clock");
+            return  "midnight";
+        } else {
+            return numberNames[hour] + " o'clock";
         }
     }
 
+    /**
+     * Uses regex to validate input as 12 hour clock time in format of HH:MM
+     * @param time to be validated
+     * @throws IllegalArgumentException if the input is not valid (eg. 12:78)
+     */
     private static void validateInput(String time) {
         Pattern pattern = Pattern.compile("[0,1]?[0-9]:[0-5][0-9]");
         if(time == null || !pattern.matcher(time).find()){
@@ -98,13 +127,18 @@ public class ToSpokenEnglishConverter {
         }
     }
 
-    private static void minutesToSpokenEnglish(StringBuilder timeInEnglish, Integer minute) {
+    /**
+     * appends the leading minute part of the spoken english time to the resulting
+     * @param minute the minute valeu to be converted
+     * @return the minute part of spoken english time
+     */
+    private static String convertMinutesToSpokenEnglish(Integer minute) {
         int firstMinuteDigit = (int) Math.floor(minute / 10.);
         int secondMinuteDigit = minute % 10;
         if(minute >= 20){
-            timeInEnglish.append(tensDigitsNames[firstMinuteDigit]).append(" ").append(numberNames[secondMinuteDigit]);
+            return tensDigitsNames[firstMinuteDigit] + " " + numberNames[secondMinuteDigit];
         } else {
-            timeInEnglish.append(numberNames[minute]);
+            return numberNames[minute];
         }
     }
 }
