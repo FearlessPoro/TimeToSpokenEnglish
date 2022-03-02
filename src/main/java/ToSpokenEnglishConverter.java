@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
  */
 public class ToSpokenEnglishConverter {
 
-    //This array is used to store names of consecutive number names used in conversion of time
+    //This array is used to store names of consecutive numbers used in conversion of time
     private static final String[] numberNames = {
             "",
             "one",
